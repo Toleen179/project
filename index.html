@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حاسبة طريقة نيوتن-رافسون</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0984e3',
+                        accent: '#00f2fe',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Math.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-300">
+
+    <!-- Header Controls -->
+    <header class="container mx-auto px-4 py-6 flex justify-between items-center border-b border-gray-200 dark:border-gray-800">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0984e3] to-[#00f2fe] flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-square-root-variable"></i>
+            </div>
+            <h1 id="app-title" class="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                طريقة نيوتن-رافسون
+            </h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 flex items-center justify-center transition">
+                <i id="theme-icon" class="fa-solid fa-moon text-primary"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Controls Panel -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 lg:col-span-1 h-fit">
+            <h2 id="settings-title" class="text-lg font-bold mb-4 flex items-center gap-2 text-primary">
+                <i class="fa-solid fa-sliders"></i> إعدادات المسألة
+            </h2>
+            
+            <form id="nr-form" onsubmit="event.preventDefault(); calculateNewton();" class="space-y-4">
+                <div>
+                    <label id="lbl-fx" class="block text-sm font-semibold mb-1">دالة المعادلة f(x):</label>
+                    <input type="text" id="fx-input" value="x^3 - x - 2" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary transition">
+                </div>
+
+                <div>
+                    <label id="lbl-dfx" class="block text-sm font-semibold mb-1">المشتقة f'(x) (اختياري):</label>
+                    <input type="text" id="dfx-input" placeholder="تلقائي" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary transition">
+                </div>
+
+                <div>
+                    <label id="lbl-x0" class="block text-sm font-semibold mb-1">التخمين الأولي (x₀):</label>
+                    <input type="number" step="any" id="x0-input" value="1.5" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary transition">
+                </div>
+
+                <button type="submit" id="btn-calc" class="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold shadow-lg shadow-blue-500/20 hover:opacity-90 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> احسب وحلل النتائج
+                </button>
+            </form>
+
+            <div id="result-summary" class="mt-6 p-4 rounded-xl bg-blue-50 dark:bg-gray-900/50 border border-blue-200 dark:border-blue-900/50 hidden">
+                <h3 id="lbl-root-found" class="text-sm font-semibold text-primary mb-1">الجذر التقريبي المحسوب:</h3>
+                <p id="root-output" class="text-2xl font-bold text-accent"></p>
+            </div>
+        </div>
+
+        <!-- Output & Visualization Panel -->
+        <div class="space-y-8 lg:col-span-2">
+            <!-- Chart Container -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+                <h3 id="lbl-chart-title" class="text-lg font-bold mb-4 flex items-center gap-2 text-primary">
+                    <i class="fa-solid fa-chart-line"></i> الرسم البياني للدالة والمماس
+                </h3>
+                <div class="relative h-72 w-full">
+                    <canvas id="functionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Steps Table Container -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <h3 id="lbl-table-title" class="text-lg font-bold mb-4 flex items-center gap-2 text-primary">
+                    <i class="fa-solid fa-table-list"></i> جدول خطوات التكرار
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr id="table-header" class="border-b border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+                                <th class="py-3 px-4">i</th>
+                                <th class="py-3 px-4">x<sub>i</sub></th>
+                                <th class="py-3 px-4">f(x<sub>i</sub>)</th>
+                                <th class="py-3 px-4">f'(x<sub>i</sub>)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="text-sm divide-y divide-gray-100 dark:divide-gray-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Connect External Script -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+body {
+    font-family: 'Cairo', sans-serif;
+}
+
+/* تخصيص إضافي لخطوط ومظهر الجداول والرسومات إذا لزم الأمر */
+input:focus {
+    box-shadow: 0 0 0 3px rgba(9, 132, 227, 0.15);
+}
