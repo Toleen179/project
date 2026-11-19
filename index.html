@@ -3,20 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>حاسبة طريقة نيوتن-رافسون</title>
+    <title>طريقة نيوتن-رافسون</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#0984e3',
-                        accent: '#00f2fe',
-                    }
-                }
-            }
+            darkMode: 'class'
         }
     </script>
     <!-- Math.js -->
@@ -25,100 +17,369 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+        body { font-family: 'Cairo', sans-serif; line-height: 1.65; }
+        input:focus { outline: none; box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.25); }
+    </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-300">
+<body class="bg-zinc-950 text-white min-h-screen transition-colors duration-300">
 
-    <!-- Header Controls -->
-    <header class="container mx-auto px-4 py-6 flex justify-between items-center border-b border-gray-200 dark:border-gray-800">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0984e3] to-[#00f2fe] flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">
-                <i class="fa-solid fa-square-root-variable"></i>
+    <!-- Header -->
+    <header id="main-header" class="border-b border-zinc-800 bg-zinc-900 sticky top-0 z-30 transition-colors duration-300">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-yellow-400/15 border border-yellow-400/40 text-yellow-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-square-root-variable"></i>
+                </div>
+                <h1 class="text-xl font-bold text-white">طريقة نيوتن-رافسون</h1>
             </div>
-            <h1 id="app-title" class="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                طريقة نيوتن-رافسون
-            </h1>
-        </div>
-        <div class="flex items-center gap-3">
-            <!-- Theme Toggle -->
-            <button onclick="toggleTheme()" class="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 flex items-center justify-center transition">
-                <i id="theme-icon" class="fa-solid fa-moon text-primary"></i>
-            </button>
+
+            <div class="flex items-center gap-2.5">
+                <button type="button" onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 flex items-center justify-center transition cursor-pointer">
+                    <i id="theme-icon" class="fa-solid fa-sun text-yellow-400"></i>
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <!-- Controls Panel -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 lg:col-span-1 h-fit">
-            <h2 id="settings-title" class="text-lg font-bold mb-4 flex items-center gap-2 text-primary">
-                <i class="fa-solid fa-sliders"></i> إعدادات المسألة
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-7">
+
+        <!-- Input Controls Card -->
+        <section class="theme-card bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-lg transition-colors duration-300">
+            <h2 class="text-base font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-sliders"></i>
+                <span>إعدادات المسألة</span>
             </h2>
-            
-            <form id="nr-form" onsubmit="event.preventDefault(); calculateNewton();" class="space-y-4">
-                <div>
-                    <label id="lbl-fx" class="block text-sm font-semibold mb-1">دالة المعادلة f(x):</label>
-                    <input type="text" id="fx-input" value="x^3 - x - 2" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary transition">
+
+            <form onsubmit="event.preventDefault(); calculateNewton();" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div class="md:col-span-4">
+                    <label for="fx-input" class="theme-label block text-xs font-semibold text-white mb-1.5">دالة المعادلة f(x):</label>
+                    <input type="text" id="fx-input" required
+                        class="theme-input w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-sm text-white focus:border-yellow-400 transition">
                 </div>
 
-                <div>
-                    <label id="lbl-dfx" class="block text-sm font-semibold mb-1">المشتقة f'(x) (اختياري):</label>
-                    <input type="text" id="dfx-input" placeholder="تلقائي" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary transition">
+                <div class="md:col-span-4">
+                    <label for="dfx-input" class="theme-label block text-xs font-semibold text-white mb-1.5">المشتقة f'(x):</label>
+                    <input type="text" id="dfx-input" required
+                        class="theme-input w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-sm text-white focus:border-yellow-400 transition">
                 </div>
 
-                <div>
-                    <label id="lbl-x0" class="block text-sm font-semibold mb-1">التخمين الأولي (x₀):</label>
-                    <input type="number" step="any" id="x0-input" value="1.5" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary transition">
+                <div class="md:col-span-2">
+                    <label for="x0-input" class="theme-label block text-xs font-semibold text-white mb-1.5">التخمين الأولي (x₀):</label>
+                    <input type="text" inputmode="decimal" id="x0-input" onfocus="this.value = ''" required
+                        class="theme-input w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-sm text-white focus:border-yellow-400 transition">
                 </div>
 
-                <button type="submit" id="btn-calc" class="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold shadow-lg shadow-blue-500/20 hover:opacity-90 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> احسب وحلل النتائج
-                </button>
+                <div class="md:col-span-2">
+                    <button type="submit"
+                        class="w-full py-2.5 px-4 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-zinc-950 font-extrabold text-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-play"></i>
+                        <span>احسب الآن</span>
+                    </button>
+                </div>
             </form>
+        </section>
 
-            <div id="result-summary" class="mt-6 p-4 rounded-xl bg-blue-50 dark:bg-gray-900/50 border border-blue-200 dark:border-blue-900/50 hidden">
-                <h3 id="lbl-root-found" class="text-sm font-semibold text-primary mb-1">الجذر التقريبي المحسوب:</h3>
-                <p id="root-output" class="text-2xl font-bold text-accent"></p>
+        <!-- Result Banner -->
+        <section id="result-summary" class="hidden theme-card bg-zinc-900 border border-yellow-400/50 rounded-2xl p-5 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors duration-300">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-yellow-400/15 text-yellow-400 text-lg flex items-center justify-center">
+                    <i class="fa-solid fa-check-circle"></i>
+                </div>
+                <div>
+                    <span class="theme-subtext text-xs font-semibold text-zinc-300 block">الجذر التقريبي المحسوب:</span>
+                    <span id="root-output" class="text-2xl font-extrabold text-yellow-400 font-mono"></span>
+                </div>
             </div>
-        </div>
+            <span id="iter-count-badge" class="theme-badge text-xs font-semibold px-3.5 py-1.5 rounded-full bg-zinc-800 text-yellow-300 w-fit"></span>
+        </section>
 
-        <!-- Output & Visualization Panel -->
-        <div class="space-y-8 lg:col-span-2">
-            <!-- Chart Container -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                <h3 id="lbl-chart-title" class="text-lg font-bold mb-4 flex items-center gap-2 text-primary">
-                    <i class="fa-solid fa-chart-line"></i> الرسم البياني للدالة والمماس
-                </h3>
-                <div class="relative h-72 w-full">
+        <!-- Side-by-Side Row: Chart + Compact Table -->
+        <div class="flex flex-col lg:flex-row items-start gap-7">
+
+            <!-- Large Chart Section -->
+            <section class="theme-card bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-lg flex-1 w-full transition-colors duration-300">
+                <h2 class="theme-heading text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-yellow-400"></i>
+                    <span>الرسم البياني للدالة</span>
+                </h2>
+                <div class="relative h-[430px] w-full">
                     <canvas id="functionChart"></canvas>
                 </div>
-            </div>
+            </section>
 
-            <!-- Steps Table Container -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <h3 id="lbl-table-title" class="text-lg font-bold mb-4 flex items-center gap-2 text-primary">
-                    <i class="fa-solid fa-table-list"></i> جدول خطوات التكرار
-                </h3>
+            <!-- Compact Iterations Table Section -->
+            <section class="theme-card bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-lg w-fit min-w-[270px] shrink-0 transition-colors duration-300">
+                <h2 class="theme-heading text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-table-list text-yellow-400"></i>
+                    <span>جدول خطوات التكرار</span>
+                </h2>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-right border-collapse">
                         <thead>
-                            <tr id="table-header" class="border-b border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
-                                <th class="py-3 px-4">i</th>
-                                <th class="py-3 px-4">x<sub>i</sub></th>
-                                <th class="py-3 px-4">f(x<sub>i</sub>)</th>
-                                <th class="py-3 px-4">f'(x<sub>i</sub>)</th>
+                            <tr id="table-thead-row" class="border-b border-zinc-800 text-xs text-yellow-400 bg-zinc-950/60">
+                                <th class="py-3 px-6">i</th>
+                                <th class="py-3 px-6">xᵢ</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body" class="text-sm divide-y divide-gray-100 dark:divide-gray-700/50"></tbody>
+                        <tbody id="table-body" class="text-sm divide-y divide-zinc-800/80 font-mono"></tbody>
                     </table>
                 </div>
-            </div>
+            </section>
+
         </div>
+
     </main>
 
-    <!-- Connect External Script -->
-    <script src="script.js"></script>
+    <script>
+        let chartInstance = null;
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            const header = document.getElementById('main-header');
+            const cards = document.querySelectorAll('.theme-card');
+            const labels = document.querySelectorAll('.theme-label');
+            const inputs = document.querySelectorAll('.theme-input');
+            const headings = document.querySelectorAll('.theme-heading');
+            const subtexts = document.querySelectorAll('.theme-subtext');
+            const badges = document.querySelectorAll('.theme-badge');
+            const theadRow = document.getElementById('table-thead-row');
+
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                document.body.className = "bg-white text-zinc-900 min-h-screen transition-colors duration-300";
+                header.className = "border-b border-zinc-200 bg-white sticky top-0 z-30 transition-colors duration-300";
+                icon.className = "fa-solid fa-moon text-zinc-800";
+
+                cards.forEach(c => {
+                    c.classList.remove('bg-zinc-900', 'border-zinc-800', 'border-yellow-400/50');
+                    c.classList.add('bg-white', 'border-zinc-200');
+                });
+                labels.forEach(l => {
+                    l.classList.remove('text-white');
+                    l.classList.add('text-zinc-900');
+                });
+                inputs.forEach(i => {
+                    i.classList.remove('bg-zinc-950', 'border-zinc-700', 'text-white');
+                    i.classList.add('bg-white', 'border-zinc-300', 'text-zinc-900');
+                });
+                headings.forEach(h => {
+                    h.classList.remove('text-white');
+                    h.classList.add('text-zinc-900');
+                });
+                subtexts.forEach(s => {
+                    s.classList.remove('text-zinc-300');
+                    s.classList.add('text-zinc-700');
+                });
+                badges.forEach(b => {
+                    b.classList.remove('bg-zinc-800', 'text-yellow-300');
+                    b.classList.add('bg-yellow-100', 'text-zinc-900');
+                });
+                if (theadRow) {
+                    theadRow.className = "border-b border-zinc-200 text-xs text-zinc-900 bg-yellow-50";
+                }
+            } else {
+                html.classList.add('dark');
+                document.body.className = "bg-zinc-950 text-white min-h-screen transition-colors duration-300";
+                header.className = "border-b border-zinc-800 bg-zinc-900 sticky top-0 z-30 transition-colors duration-300";
+                icon.className = "fa-solid fa-sun text-yellow-400";
+
+                cards.forEach(c => {
+                    c.classList.add('bg-zinc-900', 'border-zinc-800');
+                    c.classList.remove('bg-white', 'border-zinc-200');
+                });
+                labels.forEach(l => {
+                    l.classList.add('text-white');
+                    l.classList.remove('text-zinc-900');
+                });
+                inputs.forEach(i => {
+                    i.classList.add('bg-zinc-950', 'border-zinc-700', 'text-white');
+                    i.classList.remove('bg-white', 'border-zinc-300', 'text-zinc-900');
+                });
+                headings.forEach(h => {
+                    h.classList.add('text-white');
+                    h.classList.remove('text-zinc-900');
+                });
+                subtexts.forEach(s => {
+                    s.classList.add('text-zinc-300');
+                    s.classList.remove('text-zinc-700');
+                });
+                badges.forEach(b => {
+                    b.classList.add('bg-zinc-800', 'text-yellow-300');
+                    b.classList.remove('bg-yellow-100', 'text-zinc-900');
+                });
+                if (theadRow) {
+                    theadRow.className = "border-b border-zinc-800 text-xs text-yellow-400 bg-zinc-950/60";
+                }
+            }
+
+            if (chartInstance) calculateNewton();
+        }
+
+        function formatNum(num, decimals = 5) {
+            const rounded = Number(num.toFixed(decimals));
+            return (rounded === 0 ? 0 : rounded).toFixed(decimals);
+        }
+
+        function calculateNewton() {
+            const fxStr = document.getElementById('fx-input').value.trim();
+            const dfxStr = document.getElementById('dfx-input').value.trim();
+            const x0Raw = document.getElementById('x0-input').value.trim();
+            const x0 = parseFloat(x0Raw);
+
+            if (!fxStr || !dfxStr || x0Raw === '' || isNaN(x0)) {
+                alert("يرجى إدخال دالة المعادلة والمشتقة والتخمين الأولي.");
+                return;
+            }
+
+            try {
+                const compiledF = math.compile(fxStr);
+                const compiledDF = math.compile(dfxStr);
+
+                const steps = [];
+                let currentX = x0;
+                const decimals = 5;
+                const maxSteps = 1000;
+
+                for (let i = 0; i < maxSteps; i++) {
+                    const fxVal = compiledF.evaluate({ x: currentX });
+                    const dfxVal = compiledDF.evaluate({ x: currentX });
+
+                    if (!isFinite(fxVal) || !isFinite(dfxVal)) {
+                        alert("ظهرت قيمة غير معرفة أثناء التكرار.");
+                        break;
+                    }
+
+                    if (dfxVal === 0) {
+                        alert("المشتقة تساوي صفراً، تعذر إكمال الطريقة.");
+                        break;
+                    }
+
+                    const nextX = currentX - (fxVal / dfxVal);
+
+                    steps.push({
+                        index: i,
+                        x: currentX
+                    });
+
+                    // يتوقف التكرار عندما يصبح آخر ناتجين متطابقين
+                    if (formatNum(nextX, decimals) === formatNum(currentX, decimals)) {
+                        steps.push({
+                            index: i + 1,
+                            x: nextX
+                        });
+                        currentX = nextX;
+                        break;
+                    }
+
+                    currentX = nextX;
+                }
+
+                document.getElementById('result-summary').classList.remove('hidden');
+                document.getElementById('root-output').innerText = formatNum(currentX, 6);
+                document.getElementById('iter-count-badge').innerText = `عدد الخطوات: ${steps.length}`;
+
+                const isDark = document.documentElement.classList.contains('dark');
+                const tbody = document.getElementById('table-body');
+
+                tbody.innerHTML = steps.map((item, idx) => {
+                    const isLastTwo = idx >= steps.length - 2;
+                    const rowStyle = isLastTwo
+                        ? (isDark ? "bg-yellow-400/15 text-yellow-300 font-bold" : "bg-yellow-100 text-zinc-950 font-bold")
+                        : (isDark ? "hover:bg-zinc-800/70 text-white" : "hover:bg-zinc-100 text-zinc-900");
+
+                    return `
+                        <tr class="${rowStyle} transition">
+                            <td class="py-3 px-6">${item.index}</td>
+                            <td class="py-3 px-6">${formatNum(item.x, decimals)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                drawCurve(compiledF, x0, currentX);
+
+            } catch (error) {
+                console.error(error);
+                alert("تأكد من صحة كتابة الدالة والمشتقة.");
+            }
+        }
+
+        function drawCurve(compiledF, x0, rootX) {
+            const canvas = document.getElementById('functionChart');
+            const ctx = canvas.getContext('2d');
+
+            const minX = Math.min(x0, rootX) - 2.5;
+            const maxX = Math.max(x0, rootX) + 2.5;
+            const delta = (maxX - minX) / 150;
+
+            const curveData = [];
+            for (let x = minX; x <= maxX; x += delta) {
+                try {
+                    const y = compiledF.evaluate({ x });
+                    if (isFinite(y)) curveData.push({ x, y });
+                } catch (_) {}
+            }
+
+            if (chartInstance) chartInstance.destroy();
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(24, 24, 27, 0.1)';
+            const labelColor = isDark ? '#ffffff' : '#18181b';
+
+            chartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'الدالة f(x)',
+                            data: curveData,
+                            showLine: true,
+                            borderColor: isDark ? '#ffffff' : '#18181b',
+                            backgroundColor: 'transparent',
+                            borderWidth: 3,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'الجذر التقريبي',
+                            data: [{ x: rootX, y: 0 }],
+                            backgroundColor: '#facc15',
+                            borderColor: isDark ? '#18181b' : '#ffffff',
+                            borderWidth: 2,
+                            pointRadius: 7,
+                            pointHoverRadius: 9
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            grid: { color: gridColor },
+                            ticks: { color: labelColor, font: { size: 12 } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: labelColor, font: { size: 12 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: labelColor,
+                                font: { size: 13, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,163 +1,293 @@
+let currentLang = 'ar';
 let chartInstance = null;
+let lastStepsCount = 0;
+
+const translations = {
+    ar: {
+        title: "حاسبة نيوتن-رافسون",
+        subtitle: "حل سريع وذكي للجذور العددية",
+        langBtn: "English",
+        settingsTitle: "إعدادات المعادلة",
+        lblFx: "الدالة f(x):",
+        phFx: "مثال: x^3 - 4*x - 9",
+        lblDfx: "المشتقة f'(x) (اختياري):",
+        phDfx: "تُحسب تلقائياً",
+        lblX0: "القيمة الأولية (x₀):",
+        phX0: "مثال: 2",
+        btnCalc: "احسب الآن",
+        lblRootFound: "الجذر النهائي (عند تطابق آخر ناتجين):",
+        lblChartTitle: "الرسم البياني للدالة والجذر",
+        lblTableTitle: "جدول خطوات التكرار",
+        thIter: "الخطوة (i)",
+        thXi: "xᵢ",
+        thFXi: "f(xᵢ)",
+        thDFXi: "f'(xᵢ)",
+        chartFuncLabel: "منحنى الدالة f(x)",
+        chartRootLabel: "الجذر التقريبي",
+        rowsCount: (n) => `إجمالي الخطوات: ${n}`,
+        alertInvalidInput: "يرجى إدخال معادلة صحيحة وقيمة أولية مناسبة.",
+        alertZeroDeriv: "المشتقة تساوي صفراً، تعذر إكمال الحساب.",
+        alertUndefined: "ظهرت قيمة غير معرفة أثناء التكرار.",
+        alertSyntax: "تأكد من كتابة صيغة الدالة بشكل صحيح."
+    },
+    en: {
+        title: "Newton-Raphson Studio",
+        subtitle: "Fast & Smart Numerical Root Finder",
+        langBtn: "عربي",
+        settingsTitle: "Equation Settings",
+        lblFx: "Function f(x):",
+        phFx: "e.g. x^3 - 4*x - 9",
+        lblDfx: "Derivative f'(x) (Optional):",
+        phDfx: "Auto-computed",
+        lblX0: "Initial Guess (x₀):",
+        phX0: "e.g. 2",
+        btnCalc: "Solve Now",
+        lblRootFound: "Final Root (Matched Last Two Results):",
+        lblChartTitle: "Function Curve & Root",
+        lblTableTitle: "Iterations Table",
+        thIter: "Step (i)",
+        thXi: "xᵢ",
+        thFXi: "f(xᵢ)",
+        thDFXi: "f'(xᵢ)",
+        chartFuncLabel: "Function f(x)",
+        chartRootLabel: "Approximate Root",
+        rowsCount: (n) => `Total Steps: ${n}`,
+        alertInvalidInput: "Please enter a valid function and initial guess.",
+        alertZeroDeriv: "Derivative is zero. Method cannot continue.",
+        alertUndefined: "Undefined value encountered during iteration.",
+        alertSyntax: "Please check the mathematical syntax of your function."
+    }
+};
+
+function toggleLanguage() {
+    currentLang = currentLang === 'ar' ? 'en' : 'ar';
+    const isAr = currentLang === 'ar';
+    document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('lang', currentLang);
+
+    const t = translations[currentLang];
+    document.getElementById('app-title').innerText = t.title;
+    document.getElementById('app-subtitle').innerText = t.subtitle;
+    document.getElementById('lang-btn-text').innerText = t.langBtn;
+    document.getElementById('settings-title').innerHTML = `<i class="fa-solid fa-sliders text-rose-400"></i><span>${t.settingsTitle}</span>`;
+    document.getElementById('lbl-fx').innerText = t.lblFx;
+    document.getElementById('fx-input').placeholder = t.phFx;
+    document.getElementById('lbl-dfx').innerText = t.lblDfx;
+    document.getElementById('dfx-input').placeholder = t.phDfx;
+    document.getElementById('lbl-x0').innerText = t.lblX0;
+    document.getElementById('x0-input').placeholder = t.phX0;
+    document.getElementById('btn-calc').innerHTML = `<i class="fa-solid fa-play"></i><span>${t.btnCalc}</span>`;
+    document.getElementById('lbl-root-found').innerText = t.lblRootFound;
+
+    document.getElementById('lbl-chart-title').innerHTML = `
+        <span class="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-300 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-chart-line"></i>
+        </span>
+        <span>${t.lblChartTitle}</span>
+    `;
+
+    document.getElementById('lbl-table-title').innerHTML = `
+        <span class="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-300 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-table-list"></i>
+        </span>
+        <span>${t.lblTableTitle}</span>
+    `;
+
+    const tableElem = document.querySelector('table');
+    tableElem.classList.toggle('text-right', isAr);
+    tableElem.classList.toggle('text-left', !isAr);
+
+    document.getElementById('table-header').innerHTML = `
+        <th class="py-3.5 px-4 ${isAr ? 'rounded-tr-xl' : 'rounded-tl-xl'}">${t.thIter}</th>
+        <th class="py-3.5 px-4">${t.thXi}</th>
+        <th class="py-3.5 px-4">${t.thFXi}</th>
+        <th class="py-3.5 px-4 ${isAr ? 'rounded-tl-xl' : 'rounded-tr-xl'}">${t.thDFXi}</th>
+    `;
+
+    if (lastStepsCount > 0) {
+        document.getElementById('iter-count-badge').innerText = t.rowsCount(lastStepsCount);
+    }
+
+    const fxEl = document.getElementById('fx-input');
+    const x0El = document.getElementById('x0-input');
+    if (fxEl.value.trim() && !isNaN(parseFloat(x0El.value))) {
+        calculateNewton();
+    }
+}
 
 function toggleTheme() {
     const html = document.documentElement;
     const icon = document.getElementById('theme-icon');
+    const cards = document.querySelectorAll('section');
+
     if (html.classList.contains('dark')) {
         html.classList.remove('dark');
-        icon.className = "fa-solid fa-sun text-primary";
+        document.body.className = "bg-rose-50/60 text-slate-900 min-h-screen transition-colors duration-300 relative overflow-x-hidden";
+        icon.className = "fa-solid fa-moon text-slate-700";
+        cards.forEach(c => {
+            if (c.id !== 'result-summary') {
+                c.classList.remove('bg-[#111827]/90', 'border-slate-800');
+                c.classList.add('bg-white', 'border-rose-100');
+            }
+        });
     } else {
         html.classList.add('dark');
-        icon.className = "fa-solid fa-moon text-primary";
+        document.body.className = "bg-[#090d16] text-slate-100 min-h-screen transition-colors duration-300 relative overflow-x-hidden";
+        icon.className = "fa-solid fa-sun text-amber-300";
+        cards.forEach(c => {
+            if (c.id !== 'result-summary') {
+                c.classList.add('bg-[#111827]/90', 'border-slate-800');
+                c.classList.remove('bg-white', 'border-rose-100');
+            }
+        });
     }
     if (chartInstance) calculateNewton();
 }
 
 function formatNum(num, decimals = 5) {
-    // معالجة -0.00000 لتظهر 0.00000 بشكل نظيف
-    const fixed = Number(num.toFixed(decimals));
-    return (fixed === 0 ? 0 : fixed).toFixed(decimals);
+    const rounded = Number(num.toFixed(decimals));
+    return (rounded === 0 ? 0 : rounded).toFixed(decimals);
 }
 
 function calculateNewton() {
-    const fxStr = document.getElementById('fx-input').value;
-    const dfxStrInput = document.getElementById('dfx-input').value.trim();
+    const t = translations[currentLang];
+    const fxStr = document.getElementById('fx-input').value.trim();
+    const dfxStr = document.getElementById('dfx-input').value.trim();
     const x0 = parseFloat(document.getElementById('x0-input').value);
 
-    if (isNaN(x0)) {
-        alert("يرجى إدخال تخمين أولي صحيح.");
+    if (!fxStr || isNaN(x0)) {
+        alert(t.alertInvalidInput);
         return;
     }
 
     try {
-        const f = math.compile(fxStr);
-        let df;
-        if (dfxStrInput !== '') {
-            df = math.compile(dfxStrInput);
-        } else {
-            const node = math.parse(fxStr);
-            const derivNode = math.derivative(node, 'x');
-            df = derivNode.compile();
-        }
+        const compiledF = math.compile(fxStr);
+        const compiledDF = dfxStr
+            ? math.compile(dfxStr)
+            : math.derivative(math.parse(fxStr), 'x').compile();
 
-        let iterations = [];
-        let xi = x0;
-        const safetyLimit = 1000;
+        const steps = [];
+        let currentX = x0;
         const decimals = 5;
+        const maxSteps = 1000;
 
-        for (let i = 0; i < safetyLimit; i++) {
-            const fxi = f.evaluate({ x: xi });
-            const dfxi = df.evaluate({ x: xi });
+        for (let i = 0; i < maxSteps; i++) {
+            const fxVal = compiledF.evaluate({ x: currentX });
+            const dfxVal = compiledDF.evaluate({ x: currentX });
 
-            if (!isFinite(fxi) || !isFinite(dfxi)) {
-                alert("القيمة غير معرفة أو غير منتهية.");
+            if (!isFinite(fxVal) || !isFinite(dfxVal)) {
+                alert(t.alertUndefined);
                 break;
             }
 
-            if (dfxi === 0) {
-                alert("المشتقة تساوي صفراً، تعذر إكمال الطريقة.");
+            if (dfxVal === 0) {
+                alert(t.alertZeroDeriv);
                 break;
             }
 
-            const xNext = xi - (fxi / dfxi);
+            const nextX = currentX - (fxVal / dfxVal);
 
-            iterations.push({
-                i: i,
-                xi: xi,
-                fxi: fxi,
-                dfxi: dfxi,
-                xNext: xNext
+            steps.push({
+                index: i,
+                x: currentX,
+                fx: fxVal,
+                dfx: dfxVal
             });
 
-            // يتوقف التكرار عندما يصبح الناتج الحالي والناتج التالي متطابقين
-            if (formatNum(xNext, decimals) === formatNum(xi, decimals)) {
-                iterations.push({
-                    i: i + 1,
-                    xi: xNext,
-                    fxi: f.evaluate({ x: xNext }),
-                    dfxi: df.evaluate({ x: xNext }),
-                    xNext: xNext
+            // يتوقف التكرار عندما يصبح آخر ناتجين متطابقين
+            if (formatNum(nextX, decimals) === formatNum(currentX, decimals)) {
+                steps.push({
+                    index: i + 1,
+                    x: nextX,
+                    fx: compiledF.evaluate({ x: nextX }),
+                    dfx: compiledDF.evaluate({ x: nextX })
                 });
-                xi = xNext;
+                currentX = nextX;
                 break;
             }
 
-            xi = xNext;
+            currentX = nextX;
         }
 
-        // عرض النتيجة النهائية
-        document.getElementById('result-summary').classList.remove('hidden');
-        document.getElementById('root-output').innerText = formatNum(xi, 6);
+        lastStepsCount = steps.length;
 
-        // عرض جميع خطوات التكرار حتى توقفها عند تطابق آخر ناتجين
+        const summaryEl = document.getElementById('result-summary');
+        summaryEl.classList.remove('hidden');
+        document.getElementById('root-output').innerText = formatNum(currentX, 6);
+        document.getElementById('iter-count-badge').innerText = t.rowsCount(steps.length);
+
+        const isDark = document.documentElement.classList.contains('dark');
         const tbody = document.getElementById('table-body');
-        tbody.innerHTML = '';
 
-        iterations.forEach(row => {
-            tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
-                    <td class="py-3 px-4 font-semibold">${row.i}</td>
-                    <td class="py-3 px-4">${formatNum(row.xi, decimals)}</td>
-                    <td class="py-3 px-4">${formatNum(row.fxi, decimals)}</td>
-                    <td class="py-3 px-4">${formatNum(row.dfxi, decimals)}</td>
+        tbody.innerHTML = steps.map((item, idx) => {
+            const isLastTwo = idx >= steps.length - 2;
+            const rowStyle = isLastTwo
+                ? (isDark ? "bg-cyan-500/15 text-lime-300 font-bold" : "bg-cyan-100 text-slate-900 font-bold")
+                : (isDark ? "hover:bg-slate-800/50 text-slate-200" : "hover:bg-rose-50/70 text-slate-800");
+
+            return `
+                <tr class="${rowStyle} transition">
+                    <td class="py-3 px-4">${item.index}</td>
+                    <td class="py-3 px-4">${formatNum(item.x, decimals)}</td>
+                    <td class="py-3 px-4">${formatNum(item.fx, decimals)}</td>
+                    <td class="py-3 px-4">${formatNum(item.dfx, decimals)}</td>
                 </tr>
             `;
-        });
+        }).join('');
 
-        // رسم المخطط البياني
-        plotGraph(f, x0, xi);
+        drawCurve(compiledF, x0, currentX);
 
-    } catch (err) {
-        console.error(err);
-        alert("تأكد من صحة كتابة الدالة الرياضية.");
+    } catch (error) {
+        console.error(error);
+        alert(t.alertSyntax);
     }
 }
 
-function plotGraph(f, xStart, xFinal) {
-    const ctx = document.getElementById('functionChart').getContext('2d');
-    
-    let minX = Math.min(xStart, xFinal) - 2;
-    let maxX = Math.max(xStart, xFinal) + 2;
-    let step = (maxX - minX) / 100;
-    
-    let funcPoints = [];
-    for (let x = minX; x <= maxX; x += step) {
+function drawCurve(compiledF, startX, rootX) {
+    const t = translations[currentLang];
+    const canvas = document.getElementById('functionChart');
+    const ctx = canvas.getContext('2d');
+
+    const minX = Math.min(startX, rootX) - 2.5;
+    const maxX = Math.max(startX, rootX) + 2.5;
+    const delta = (maxX - minX) / 150;
+
+    const curveData = [];
+    for (let x = minX; x <= maxX; x += delta) {
         try {
-            let y = f.evaluate({ x: x });
-            if (isFinite(y)) {
-                funcPoints.push({ x: x, y: y });
-            }
-        } catch (e) {}
+            const y = compiledF.evaluate({ x });
+            if (isFinite(y)) curveData.push({ x, y });
+        } catch (_) {}
     }
 
-    if (chartInstance) {
-        chartInstance.destroy();
-    }
+    if (chartInstance) chartInstance.destroy();
 
     const isDark = document.documentElement.classList.contains('dark');
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
-    const textColor = isDark ? '#9ca3af' : '#4b5563';
+    const gridColor = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(15, 23, 42, 0.08)';
+    const labelColor = isDark ? '#cbd5e1' : '#334155';
 
     chartInstance = new Chart(ctx, {
         type: 'scatter',
         data: {
             datasets: [
                 {
-                    label: 'f(x)',
-                    data: funcPoints,
+                    label: t.chartFuncLabel,
+                    data: curveData,
                     showLine: true,
-                    borderColor: '#0984e3',
-                    backgroundColor: 'transparent',
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.12)',
                     borderWidth: 3,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    tension: 0.25
                 },
                 {
-                    label: 'تقدير الجذر',
-                    data: [{ x: xFinal, y: 0 }],
-                    backgroundColor: '#00f2fe',
+                    label: t.chartRootLabel,
+                    data: [{ x: rootX, y: 0 }],
+                    backgroundColor: '#ff4d6d',
                     borderColor: '#ffffff',
-                    pointRadius: 6,
-                    pointHoverRadius: 8
+                    borderWidth: 2,
+                    pointRadius: 8,
+                    pointHoverRadius: 10
                 }
             ]
         },
@@ -169,22 +299,21 @@ function plotGraph(f, xStart, xFinal) {
                     type: 'linear',
                     position: 'bottom',
                     grid: { color: gridColor },
-                    ticks: { color: textColor }
+                    ticks: { color: labelColor, font: { size: 12 } }
                 },
                 y: {
                     grid: { color: gridColor },
-                    ticks: { color: textColor }
+                    ticks: { color: labelColor, font: { size: 12 } }
                 }
             },
             plugins: {
                 legend: {
-                    labels: { color: textColor }
+                    labels: {
+                        color: labelColor,
+                        font: { size: 13, weight: 'bold' }
+                    }
                 }
             }
         }
     });
 }
-
-window.onload = () => {
-    calculateNewton();
-};
